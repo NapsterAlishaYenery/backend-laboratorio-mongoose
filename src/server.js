@@ -10,6 +10,9 @@ const conectarMongoDBAltas = require('./config/db');
 
 // Rutas
 const usuariosRoutes = require("./routes/user.route");
+const productosRoutes = require("./routes/product.route");
+const blogsRoutes = require("./routes/blog.route");
+const addOnsRoutes = require("./routes/add-ons.route");
 
 // Crear servidor
 const app = express();
@@ -44,6 +47,9 @@ conectarMongoDBAltas();
 
 // Rutas principales    
 app.use("/api/usuarios", usuariosRoutes);
+app.use("/api/productos", productosRoutes);
+app.use("/api/blogs", blogsRoutes);
+app.use("/api/add-ons", addOnsRoutes);
 
 // Middleware global de errores
 app.use((err, req, res, next) => {

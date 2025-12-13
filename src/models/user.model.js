@@ -58,12 +58,27 @@ const UsuarioSchema = new Schema({
         max: 120
     },
 
-    // --- NUEVO CAMPO COMPLEJO (OBJETO ANIDADO) ---
     direccion: {
-        calle: { type: String, trim: true, maxlength: 255 },
-        ciudad: { type: String, trim: true, maxlength: 100 },
-        municipio: { type: String, trim: true, maxlength: 100 },
-        codigo_postal: { type: String, trim: true, maxlength: 10}
+        calle: { 
+            type: String, 
+            trim: true, 
+            maxlength: 255 
+        },
+        ciudad: { 
+            type: String, 
+            trim: true, 
+            maxlength: 100 
+        },
+        municipio: { 
+            type: String, 
+            trim: true, 
+            maxlength: 100 
+        },
+        codigo_postal: { 
+            type: String, 
+            trim: true, 
+            maxlength: 10
+        }
     }
 }, {
     versionKey: false
