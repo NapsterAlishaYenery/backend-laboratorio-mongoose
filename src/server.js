@@ -5,6 +5,8 @@ const helmet = require('helmet');
 const compression = require('compression');
 require('dotenv').config();
 
+const path = require('path'); 
+
 // Conexión DB
 const conectarMongoDBAltas = require('./config/db');
 
@@ -59,7 +61,7 @@ app.use((err, req, res, next) => {
 
 
 // SERVIR ARCHIVOS ESTÁTICOS
-app.use('/uploads', express.static(path.join(__dirname, 'upload'))); // Ejemplo de para la url base-url/uploads/alfajores.jpg
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 
 // Puerto del servidor
