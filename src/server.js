@@ -58,6 +58,10 @@ app.use((err, req, res, next) => {
 });
 
 
+// SERVIR ARCHIVOS ESTÁTICOS
+app.use('/uploads', express.static(path.join(__dirname, 'upload'))); // Ejemplo de para la url base-url/uploads/alfajores.jpg
+
+
 // Puerto del servidor
 const puerto = process.env.PORT || 4000;
 
