@@ -59,10 +59,26 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: "Error interno del servidor" });
 });
 
+// SERVIR ARCHIVOS ESTÁTICOS CON CORS
+const corsStaticOptions = {
+    origin: allowedOrigins,
+    credentials: true
+};
 
 // SERVIR ARCHIVOS ESTÁTICOS
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-
+// Servir archivos estáticos (imágenes) permitiendo acceso cross-origin.
+// Esto es necesario porque Helmet bloquea por defecto recursos
+// cargados desde otro dominio/puerto (ej: Angular en localhost:4200).
+// Sin esta cabecera, las imágenes se descargan pero el navegador
+// las bloquea y no se muestran en el frontend.
+app.use(
+  '/uploads',
+  (req, res, next) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    next();
+  },
+  express.static(path.join(__dirname, '../uploads'))
+);
 
 // Puerto del servidor
 const puerto = process.env.PORT || 4000;
