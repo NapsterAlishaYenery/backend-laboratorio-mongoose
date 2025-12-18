@@ -17,20 +17,24 @@ exports.sendMail = async (req, res) => {
     }
 
 
-    //transporter SMTP optimizado para Render
+    // Crear transporter SMTP
+    // Este objeto se encarga de comunicarse con el servidor de correo
+    // En este caso: Gmail vía SMTP
     const transporter = nodemailer.createTransport({
       service: 'gmail',
+      host: process.env.EMAIL_HOST || 'smtp.gmail.com',          
+      port: Number(process.env.EMAIL_PORT) || 465,   
+      secure: process.env.EMAIL_SECURE === 'true',
       auth: {
         user: process.env.EMAIL_SENDER,
         pass: process.env.EMAIL_PASSWORD
       },
-      // Configuración de tiempos de espera para evitar ETIMEDOUT
-      connectionTimeout: 30000, // 30 segundos
-      greetingTimeout: 30000,   // 30 segundos
-      socketTimeout: 45000,     // 45 segundos
+      // Configuraciones de robustez para servidores en la nube
+      connectionTimeout: 20000, 
+      greetingTimeout: 20000,
+      socketTimeout: 30000,
       tls: {
-        // Esto permite que la conexión pase aunque Render use un proxy intermedio
-        rejectUnauthorized: false
+        rejectUnauthorized: false // Vital para evitar bloqueos de certificados en Render
       }
     });
 
