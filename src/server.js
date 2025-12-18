@@ -20,6 +20,9 @@ const sendMail = require('./routes/send-mail.route');
 // Crear servidor
 const app = express();
 
+// 1. CONFIGURACIÓN PARA RENDER (Agrégalo aquí mismo)
+app.set('trust proxy', 1);
+
 
 // CORS permitido
 const allowedOrigins = [

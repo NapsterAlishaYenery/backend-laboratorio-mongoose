@@ -21,6 +21,7 @@ exports.sendMail = async (req, res) => {
     // Este objeto se encarga de comunicarse con el servidor de correo
     // En este caso: Gmail vía SMTP
     const transporter = nodemailer.createTransport({
+      service: 'gmail',
       host: process.env.EMAIL_HOST,          
       port: Number(process.env.EMAIL_PORT),   
       secure: process.env.EMAIL_SECURE === 'true',
