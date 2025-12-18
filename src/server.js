@@ -15,6 +15,7 @@ const usuariosRoutes = require("./routes/user.route");
 const productosRoutes = require("./routes/product.route");
 const blogsRoutes = require("./routes/blog.route");
 const addOnsRoutes = require("./routes/add-ons.route");
+const sendMail = require('./routes/send-mail.route');
 
 // Crear servidor
 const app = express();
@@ -52,6 +53,7 @@ app.use("/api/usuarios", usuariosRoutes);
 app.use("/api/productos", productosRoutes);
 app.use("/api/blogs", blogsRoutes);
 app.use("/api/add-ons", addOnsRoutes);
+app.use("/api/mail", sendMail);
 
 // Middleware global de errores
 app.use((err, req, res, next) => {
