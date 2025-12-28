@@ -33,13 +33,35 @@ exports.createProducto = async (req, res) => {
         });
 
         res.status(201).json({
-            data: nuevoProducto,
-            message: "Producto creado correctamente"
+            ok: true,
+            message: "Product created successfully",
+            data: nuevoProducto
         });
 
     } catch (error) {
+        // Error de Nombre Duplicado
+        if (error.code === 11000) {
+            return res.status(400).json({
+                ok: false,
+                message: "A product with this name already exists",
+                type: "DUPLICATE_KEY_ERROR"
+            });
+        }
+
+        // Error de Validación del Schema (Precios, largos, etc)
+        if (error.name === 'ValidationError') {
+            const firstError = Object.values(error.errors)[0].message;
+            return res.status(400).json({
+                ok: false,
+                message: firstError,
+                type: "VALIDATION_ERROR"
+            });
+        }
+
         res.status(500).json({
-            error: "Error al crear el producto"
+            ok: false,
+            message: "Internal server error",
+            type: "SERVER_ERROR"
         });
     }
 };
@@ -53,13 +75,16 @@ exports.getProductos = async (req, res) => {
         const productos = await Producto.find();
 
         res.status(200).json({
-            data: productos,
-            message: "Productos obtenidos correctamente"
+            ok: true,
+            message: "Products retrieved successfully",
+            data: productos
         });
 
     } catch (error) {
         res.status(500).json({
-            error: "Error al obtener los productos"
+            ok: false,
+            message: "Internal server error",
+            type: "SERVER_ERROR"
         });
     }
 };
@@ -76,19 +101,23 @@ exports.getProductoById = async (req, res) => {
         // Validar existencia
         if (!producto) {
             return res.status(404).json({
-                error: "Producto no encontrado"
+                ok: false,
+                message: "Product not found",
+                type: "NOT_FOUND"
             });
         }
 
         res.status(200).json({
-            data: producto,
-            message: "Producto obtenido correctamente"
+            ok: true,
+            message: "Product retrieved successfully",
+            data: producto
         });
 
     } catch (error) {
-
         res.status(500).json({
-            error: "Error al obtener el producto"
+            ok: false,
+            message: "Internal server error",
+            type: "SERVER_ERROR"
         });
     }
 };
@@ -111,23 +140,31 @@ exports.updateProducto = async (req, res) => {
         // Validar existencia
         if (!productoActualizado) {
             return res.status(404).json({
-                error: "Producto no encontrado"
+                ok: false,
+                message: "Product not found",
+                type: "NOT_FOUND"
             });
         }
 
         res.status(200).json({
-            data: productoActualizado,
-            message: "Producto actualizado correctamente"
+            ok: true,
+            message: "Product updated successfully",
+            data: productoActualizado
         });
 
     } catch (error) {
-
         if (error.name === "ValidationError") {
-            return res.status(400).json({ error: error.message });
+            const firstError = Object.values(error.errors)[0].message;
+            return res.status(400).json({
+                ok: false,
+                message: firstError,
+                type: "VALIDATION_ERROR"
+            });
         }
-
         res.status(500).json({
-            error: "Error al actualizar el producto"
+            ok: false,
+            message: "Internal server error",
+            type: "SERVER_ERROR"
         });
     }
 };
@@ -146,18 +183,23 @@ exports.deleteProducto = async (req, res) => {
         // Validar existencia
         if (!productoEliminado) {
             return res.status(404).json({
-                error: "Producto no encontrado"
+                ok: false,
+                message: "Product not found",
+                type: "NOT_FOUND"
             });
         }
 
         res.status(200).json({
-            message: "Producto eliminado correctamente"
+            ok: true,
+            message: "Product deleted successfully",
+            data: null
         });
 
     } catch (error) {
-
         res.status(500).json({
-            error: "Error al eliminar el producto"
+            ok: false,
+            message: "Internal server error",
+            type: "SERVER_ERROR"
         });
     }
 };
@@ -169,18 +211,28 @@ exports.getProductosByCategory = async (req, res) => {
 
     try {
 
-        if (!category) return res.status(400).json({ error: "Se debe especificar una categoría" });
+        if (!category) {
+            return res.status(400).json({
+                ok: false,
+                message: "Category is required",
+                type: "INVALID_QUERY_PARAM"
+            });
+        }
 
-        const productos = await Producto.find({ category });
+        const productos = await Producto.find({ category: category.toLowerCase() });
 
         res.status(200).json({
-            data: productos,
-            message: `Productos de la categoría ${category} obtenidos correctamente`
+            ok: true,
+            message: `Products for category '${category}' retrieved`,
+            data: productos
         });
 
     } catch (error) {
-
-        res.status(500).json({ error: "Error al obtener productos por categoría" });
+        res.status(500).json({
+            ok: false,
+            message: "Internal server error",
+            type: "SERVER_ERROR"
+        });
     }
 };
 
@@ -189,15 +241,19 @@ exports.getProductosDestacados = async (req, res) => {
 
     try {
 
-        const productos = await Producto.find().limit(3); // o algún criterio de destacados que se me ocurra
+        const productos = await Producto.find().limit(3).sort({ createdAt: -1 });
 
         res.status(200).json({
-            data: productos,
-            message: "Productos destacados obtenidos correctamente"
+            ok: true,
+            message: "Featured products retrieved successfully",
+            data: productos
         });
 
     } catch (error) {
-
-        res.status(500).json({ error: "Error al obtener productos destacados" });
+        res.status(500).json({
+            ok: false,
+            message: "Internal server error",
+            type: "SERVER_ERROR"
+        });
     }
 };

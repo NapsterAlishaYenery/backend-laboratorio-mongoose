@@ -29,14 +29,31 @@ exports.createBlog = async (req, res) => {
 
         // Respuesta consistente
         res.status(201).json({
-            data: nuevoBlog,
-            message: "Blog creado correctamente"
+            ok: true,
+            message: "Blog post created successfully",
+            data: nuevoBlog
         });
 
     } catch (error) {
-
-        res.status(500).json({
-            error: "Error al crear el blog"
+        if (error.code === 11000) {
+            return res.status(400).json({
+                ok: false,
+                message: "A blog with this title already exists",
+                type: "DUPLICATE_TITLE_ERROR"
+            });
+        }
+        if (error.name === 'ValidationError') {
+            const firstError = Object.values(error.errors)[0].message;
+            return res.status(400).json({ 
+                ok: false, 
+                message: firstError, 
+                type: "VALIDATION_ERROR" 
+            });
+        }
+        res.status(500).json({ 
+            ok: false, 
+            message: "Internal server error", 
+            type: "SERVER_ERROR" 
         });
     }
 };
@@ -47,17 +64,19 @@ exports.getBlogs = async (req, res) => {
     try {
 
         // Buscar todos los blogs
-        const blogs = await Blog.find();
+        const blogs = await Blog.find().sort({ createdAt: -1 });
 
         res.status(200).json({
-            data: blogs,
-            message: "Blogs obtenidos correctamente"
+            ok: true,
+            message: "Blogs retrieved successfully",
+            data: blogs
         });
 
     } catch (error) {
-
-        res.status(500).json({
-            error: "Error al obtener los blogs"
+        res.status(500).json({ 
+            ok: false, 
+            message: "Internal server error", 
+            type: "SERVER_ERROR" 
         });
     }
 };
@@ -74,20 +93,24 @@ exports.getBlogById = async (req, res) => {
 
         // Validar existencia
         if (!blog) {
-            return res.status(404).json({
-                error: "Blog no encontrado"
+           return res.status(404).json({
+                ok: false,
+                message: "Blog post not found",
+                type: "NOT_FOUND"
             });
         }
 
         res.status(200).json({
-            data: blog,
-            message: "Blog obtenido correctamente"
+            ok: true,
+            message: "Blog post retrieved successfully",
+            data: blog
         });
 
     } catch (error) {
-
-        res.status(500).json({
-            error: "Error al obtener el blog"
+        res.status(500).json({ 
+            ok: false, 
+            message: "Internal server error", 
+            type: "SERVER_ERROR" 
         });
     }
 };
@@ -110,24 +133,31 @@ exports.updateBlog = async (req, res) => {
         // Validar existencia
         if (!blogActualizado) {
             return res.status(404).json({
-                error: "Blog no encontrado"
+                ok: false,
+                message: "Blog post not found",
+                type: "NOT_FOUND"
             });
         }
 
         res.status(200).json({
-            data: blogActualizado,
-            message: "Blog actualizado correctamente"
+            ok: true,
+            message: "Blog post updated successfully",
+            data: blogActualizado
         });
 
-    } catch (error) {
-
-        // Error de validación de mongoose
+    } catch (error){
         if (error.name === "ValidationError") {
-            return res.status(400).json({ error: error.message });
+            const firstError = Object.values(error.errors)[0].message;
+            return res.status(400).json({ 
+                ok: false, 
+                message: firstError, 
+                type: "VALIDATION_ERROR" 
+            });
         }
-
-        res.status(500).json({
-            error: "Error al actualizar el blog"
+        res.status(500).json({ 
+            ok: false, 
+            message: "Internal server error", 
+            type: "SERVER_ERROR" 
         });
     }
 };
@@ -145,18 +175,23 @@ exports.deleteBlog = async (req, res) => {
         // Validar existencia
         if (!blogEliminado) {
             return res.status(404).json({
-                error: "Blog no encontrado"
+                ok: false,
+                message: "Blog post not found",
+                type: "NOT_FOUND"
             });
         }
 
         res.status(200).json({
-            message: "Blog eliminado correctamente"
+            ok: true,
+            message: "Blog post deleted successfully",
+            data: null
         });
 
     } catch (error) {
-
-        res.status(500).json({
-            error: "Error al eliminar el blog"
+        res.status(500).json({ 
+            ok: false, 
+            message: "Internal server error", 
+            type: "SERVER_ERROR" 
         });
     }
 };
@@ -167,21 +202,29 @@ exports.getBlogByCategory = async (req, res) => {
     const { category } = req.query;
 
     if (!category) {
-        return res.status(400).json({ error: "Se debe especificar una categoría" });
+        return res.status(400).json({ 
+            ok: false, 
+            message: "Category query parameter is required", 
+            type: "INVALID_QUERY" 
+        });
     }
 
     try {
 
-        const blogs = await Blog.find({ category });
+        const blogs = await Blog.find({ category: category.toLowerCase() });
 
         res.status(200).json({
-            data: blogs,
-            message: `Blogs de la categoría ${category} obtenidos correctamente`
+            ok: true,
+            message: `Blogs for category '${category}' retrieved`,
+            data: blogs
         });
 
     } catch (error) {
-
-        res.status(500).json({ error: "Error al obtener los blogs por categoría" });
+        res.status(500).json({ 
+            ok: false, 
+            message: "Internal server error", 
+            type: "SERVER_ERROR" 
+        });
     }
 };
 
@@ -192,13 +235,17 @@ exports.getRecentBlogs = async (req, res) => {
 
         const blogs = await Blog.find().sort({ createdAt: -1 }).limit(3);
 
-        res.status(200).json({
-            data: blogs,
-            message: "Blogs recientes obtenidos correctamente"
+       res.status(200).json({
+            ok: true,
+            message: "Recent blog posts retrieved",
+            data: blogs
         });
 
     } catch (error) {
-
-        res.status(500).json({ error: "Error al obtener blogs recientes" });
+        res.status(500).json({ 
+            ok: false, 
+            message: "Internal server error", 
+            type: "SERVER_ERROR" 
+        });
     }
 };

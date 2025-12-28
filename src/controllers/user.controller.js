@@ -8,24 +8,18 @@ const Usuario = require("../models/user.model");
 // Registrar Usuario
 exports.signUpUser = async (req, res) => {
     // Obtenemos los campos desde el body
-    const { 
-        nombre, 
-        apellido, 
-        email, 
-        username, 
-        password, 
-        telefono, 
-        edad,     
-        direccion 
+    const {
+        nombre,
+        apellido,
+        email,
+        username,
+        password,
+        telefono,
+        edad,
+        direccion
     } = req.body;
 
     try {
-        //Verificar si el email o username existen
-        const existe = await Usuario.findOne({ $or: [{ email }, { username }] });
-
-        if (existe) {
-            return res.status(400).json({ error: "Email o username ya están registrados" });
-        }
 
         //Encriptar password
         const salt = await bcrypt.genSalt(10);
@@ -38,13 +32,14 @@ exports.signUpUser = async (req, res) => {
             email,
             username,
             password_hash: passEncrypt,
-            telefono, 
-            edad,     
+            telefono,
+            edad,
             direccion
         });
 
         // Devolver respuesta consistente
         res.status(201).json({
+            ok: true,
             data: {
                 id: nuevoUsuario._id,
                 nombre: nuevoUsuario.nombre,
@@ -56,12 +51,34 @@ exports.signUpUser = async (req, res) => {
                 edad: nuevoUsuario.edad,
                 direccion: nuevoUsuario.direccion,
             },
-            message: "Usuario registrado correctamente",
+            message: "User registered successfully"
         });
 
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Error al registrar el usuario" });
+        // Error de Duplicado (Email/Username)
+        if (error.code === 11000) {
+            return res.status(400).json({
+                ok: false,
+                message: "Email or Username already exists",
+                type: "DUPLICATE_KEY_ERROR"
+            });
+        }
+
+        // Error de Validación del Schema
+        if (error.name === 'ValidationError') {
+            const firstError = Object.values(error.errors)[0].message;
+            return res.status(400).json({
+                ok: false,
+                message: firstError,
+                type: "VALIDATION_ERROR"
+            });
+        }
+
+        res.status(500).json({
+            ok: false,
+            message: "Internal server error",
+            type: "SERVER_ERROR"
+        });
     }
 };
 
@@ -74,12 +91,20 @@ exports.signInUser = async (req, res) => {
         const usuario = await Usuario.findOne({ username }).select("+password_hash");
 
         if (!usuario)
-            return res.status(401).json({ error: "Credenciales inválidas" });
+            return res.status(401).json({
+                ok: false,
+                message: "Invalid credentials",
+                type: "AUTH_ERROR"
+            });
 
         //Validar password
         const ok = await bcrypt.compare(password, usuario.password_hash);
         if (!ok)
-            return res.status(401).json({ error: "Password incorrecta" });
+            return res.status(401).json({
+                ok: false,
+                message: "Invalid credentials",
+                type: "AUTH_ERROR"
+            });
 
         //Crear token
         const token = jwt.sign(
@@ -96,14 +121,20 @@ exports.signInUser = async (req, res) => {
         delete userResponse.password_hash;
 
         res.json({
-            token,
-            user: userResponse,
-            message: "Login exitoso"
+            ok: true,
+            message: "Login successful",
+            data: {                // ✅ Envolvemos todo en data
+                token,
+                user: userResponse
+            }
         });
 
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Error al iniciar sesión" });
+        res.status(500).json({
+            ok: false,
+            message: "Internal server error",
+            type: "SERVER_ERROR"
+        });
     }
 };
 
@@ -112,74 +143,101 @@ exports.getPerfil = async (req, res) => {
     try {
         const usuario = await Usuario.findById(req.user.id).select("-password_hash");
 
+        if (!usuario) {
+            return res.status(404).json({
+                ok: false,
+                message: "User not found",
+                type: "NOT_FOUND"
+            });
+        }
+
         res.json({
-            data: usuario,
-            message: "Perfil obtenido correctamente"
+            ok: true,
+            message: "Profile retrieved successfully",
+            data: usuario
         });
 
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Error al obtener perfil" });
+        res.status(500).json({
+            ok: false,
+            message: "Internal server error",
+            type: "SERVER_ERROR"
+        });
     }
 };
 
 // Obtener todos los usuarios
 exports.getAllUsers = async (req, res) => {
     try {
-        
+
         const usuarios = await Usuario.find().select("-password_hash");
 
         res.json({
-            data: usuarios,
-            message: "Usuarios obtenidos correctamente"
+            ok: true,
+            message: "Users list retrieved",
+            data: usuarios
         });
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: "Error al obtener usuarios" });
+        res.status(500).json({
+            ok: false,
+            message: "Internal server error",
+            type: "SERVER_ERROR"
+        });
     }
 };
 
 // Actualizar Usuario
 exports.UpDateUser = async (req, res) => {
 
-    const  id  =  req.user.id; 
-    const updates = req.body; 
+    const id = req.user.id;
+    const updates = req.body;
 
 
 
     try {
 
-        // Evitar que alguien intente actualizar la contraseña aquí
-        if (updates.password || updates.password_hash) {
-            return res.status(400).json({
-                error: "La contraseña no se puede actualizar desde esta ruta"
-            });
-        }
-        
+        // // Evitar que alguien intente actualizar la contraseña aquí
+        // if (updates.password || updates.password_hash) {
+        //     return res.status(400).json({
+        //         error: "La contraseña no se puede actualizar desde esta ruta"
+        //     });
+        // }
+
         const usuarioActualizado = await Usuario.findByIdAndUpdate(
             id,
             { $set: updates },
             { new: true, runValidators: true }
-        ).select("-password_hash");
+        )
 
-        //Verificar si el usuario fue encontrado
         if (!usuarioActualizado) {
-            return res.status(404).json({ error: "Usuario no encontrado" });
+            return res.status(404).json({
+                ok: false,
+                message: "User not found",
+                type: "NOT_FOUND"
+            });
         }
-
         // 5. Respuesta exitosa
         res.status(200).json({
-            data: usuarioActualizado,
-            message: "Usuario actualizado exitosamente",
+            ok: true,
+            message: "User updated successfully",
+            data: usuarioActualizado
         });
 
     } catch (error) {
-        // Error de validación de Mongoose
         if (error.name === 'ValidationError') {
-            return res.status(400).json({ error: error.message });
+            const firstError = Object.values(error.errors)[0].message;
+            return res.status(400).json({
+                ok: false,
+                message: firstError,
+                type: "VALIDATION_ERROR"
+            });
         }
-
-        res.status(500).json({ error: "Error interno del servidor al actualizar el usuario" });
+        res.status(500).json({
+            ok: false,
+            message: "Internal server error",
+            type: "SERVER_ERROR"
+        });
     }
 };

@@ -3,19 +3,20 @@ const { Schema, model } = require("mongoose");
 // Sub-esquema base para opciones
 const OptionWithPriceSchema = new Schema(
     {
-        value: { 
-            type: String, 
-            required: true, 
-            trim: true 
+        value: {
+            type: String,
+            required: [true, 'Option value is required'],
+            trim: true
         },
-        label: { 
-            type: String, 
-            required: true, 
-            trim: true 
+        label: {
+            type: String,
+            required: [true, 'Option label is required'],
+            trim: true
         },
         price: {
             type: Number,
-            required: true
+            required: [true, 'Option price is required'],
+            min: [0, 'Price cannot be negative']
         }
     },
     { _id: false }
@@ -23,15 +24,15 @@ const OptionWithPriceSchema = new Schema(
 
 const OptionWithoutPriceSchema = new Schema(
     {
-        value: { 
-            type: String, 
-            required: true, 
-            trim: true 
+        value: {
+            type: String,
+            required: [true, 'Option value is required'],
+            trim: true
         },
-        label: { 
-            type: String, 
-            required: true, 
-            trim: true 
+        label: {
+            type: String,
+            required: [true, 'Option label is required'],
+            trim: true
         }
     },
     { _id: false }
@@ -42,15 +43,27 @@ const AddOnsSchema = new Schema(
     {
         weights: {
             type: [OptionWithPriceSchema],
-            required: true
+            required: true,
+            validate: {
+                validator: function(v) { return v && v.length > 0; },
+                message: 'At least one weight option is required'
+            }
         },
         fillings: {
             type: [OptionWithPriceSchema],
-            required: true
+            required: true,
+            validate: {
+                validator: function(v) { return v && v.length > 0; },
+                message: 'At least one filling option is required'
+            }
         },
         flavors: {
             type: [OptionWithoutPriceSchema],
-            required: true
+            required: true,
+            validate: {
+                validator: function(v) { return v && v.length > 0; },
+                message: 'At least one flavor option is required'
+            }
         }
     },
     {

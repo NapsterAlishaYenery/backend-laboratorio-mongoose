@@ -1,13 +1,39 @@
 function buildInvoiceTemplate(data) {
+  // 1. Definimos la nota según el método de pago que VIENE en 'data'
+  let notaMetodoPago = '';
 
-  const itbis = Number(data.itbis.toFixed(2));
-  const total = Number((data.subtotal + itbis + data.delibery).toFixed(2));
+  if (data.paymentMethod === 'pay-later') {
+    notaMetodoPago = `
+      <div style="background: #fff9e6; padding: 10px; border-radius: 4px; margin-top: 20px; font-size: 13px; color: #856404; border-left: 4px solid #ffc107;">
+        <strong>Instrucciones de Pago:</strong> Este pedido está pendiente de pago. Por favor, realice la transferencia a:<br>
+        <strong>Banco Popular:</strong> 123-456789-0 | <strong>A nombre de:</strong> AnthonyWeb SRL<br>
+        <em>Envíe su comprobante respondiendo a este correo o vía WhatsApp.</em>
+      </div>`;
+  } else {
+    notaMetodoPago = `
+      <div style="background: #e9f5ff; padding: 10px; border-radius: 4px; margin-top: 20px; font-size: 11px; color: #555; border-left: 4px solid #007bff;">
+        <strong>Nota aclaratoria:</strong> Este pedido fue procesado de forma segura a través de PayPal. El monto reflejado en su estado de cuenta bancario podría aparecer en USD según la tasa de cambio vigente de su entidad financiera.
+      </div>`;
+  }
+
+
+  // --- ADAPTACIÓN DE DATOS PARA MANTENER TU DISEÑO ---
+  // Extraemos de 'summary' y 'customer' para que tus variables sigan funcionando
+  const subtotal = data.summary?.subtotal || 0;
+  const delivery = data.summary?.delivery || 0;
+  const itbisValue = data.summary?.itbis || 0;
+
+  const itbis = Number(itbisValue.toFixed(2));
+  const total = Number((subtotal + itbisValue + delivery).toFixed(2));
+
+  // Datos del cliente
+  const name = data.customer?.name || '';
+  const email = data.customer?.email || '';
+  const phone = data.customer?.phone || '';
 
   const itemsHtml = data.items.map(item => {
 
-    const unitPrice = item.breakdown
-      ? item.breakdown.unitTotal
-      : item.price;
+    const unitPrice = (item.breakdown && item.breakdown.unitTotal) ? item.breakdown.unitTotal : item.price;
 
     let html = `
       <tr style="border-bottom:1px solid #eee">
@@ -26,7 +52,7 @@ function buildInvoiceTemplate(data) {
 
 
     // DETALLE DE PRODUCTO PERSONALIZADO
-    if (item.breakdown) {
+    if (item.breakdown && item.breakdown.basePrice) {
       html += `
         <tr>
           <td colspan="2" style="padding-left:20px; padding-bottom:10px; font-size:13px; color:#444">
@@ -84,9 +110,9 @@ function buildInvoiceTemplate(data) {
 
     <hr/>
 
-    <p><strong>Cliente:</strong> ${data.name}</p>
-    <p><strong>Email:</strong> ${data.email}</p>
-    <p><strong>Teléfono:</strong> ${data.phone}</p>
+    <p><strong>Cliente:</strong> ${name}</p>
+    <p><strong>Email:</strong> ${email}</p>
+    <p><strong>Teléfono:</strong> ${phone}</p>
 
     <hr/>
 
@@ -107,7 +133,7 @@ function buildInvoiceTemplate(data) {
     <table width="100%" cellpadding="6">
       <tr>
         <td align="right">Subtotal:</td>
-        <td align="right" width="120">RD$ ${data.subtotal}</td>
+        <td align="right" width="120">RD$ ${subtotal}</td>
       </tr>
       <tr>
         <td align="right">ITBIS (18%):</td>
@@ -115,13 +141,17 @@ function buildInvoiceTemplate(data) {
       </tr>
       <tr>
         <td align="right">Delivery:</td>
-        <td align="right">RD$ ${data.delibery}</td>
+        <td align="right">RD$ ${delivery}</td>
       </tr>
       <tr>
         <td align="right"><strong>Total a pagar:</strong></td>
         <td align="right"><strong>RD$ ${total}</strong></td>
       </tr>
     </table>
+
+    <hr/>
+
+   ${notaMetodoPago}
 
     <hr/>
 

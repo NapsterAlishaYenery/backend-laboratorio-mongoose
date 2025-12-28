@@ -16,6 +16,7 @@ const productosRoutes = require("./routes/product.route");
 const blogsRoutes = require("./routes/blog.route");
 const addOnsRoutes = require("./routes/add-ons.route");
 const sendMail = require('./routes/send-mail.route');
+const order = require('./routes/order.route');
 
 // Crear servidor
 const app = express();
@@ -27,7 +28,7 @@ app.set('trust proxy', 1);
 // CORS permitido
 const allowedOrigins = [
     "http://localhost:4200",
-    process.env.FRONTEND_URL];
+    process.env.FRONTEND_URL].filter(Boolean); // ← evita undefined;
 
 app.use(cors({
     origin: (origin, callback) => {
@@ -57,6 +58,7 @@ app.use("/api/productos", productosRoutes);
 app.use("/api/blogs", blogsRoutes);
 app.use("/api/add-ons", addOnsRoutes);
 app.use("/api/mail", sendMail);
+app.use("/api/orders", order);
 
 // Middleware global de errores
 app.use((err, req, res, next) => {

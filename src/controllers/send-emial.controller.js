@@ -1,8 +1,7 @@
 const nodemailer = require("nodemailer");
 
 // Funciones que construyen los HTML
-const {buildContactTemplate} = require("../templates/contact.template");
-const { buildInvoiceTemplate } = require("../templates/invoice.template");
+const { buildContactTemplate } = require("../templates/contact.template");
 
 exports.sendMail = async (req, res) => {
   try {
@@ -10,10 +9,11 @@ exports.sendMail = async (req, res) => {
     // Extraer payload
     const { type, data } = req.body;
 
-    if (!type || !data) {
-      return res.status(400).json({
-        error: "Payload inválido"
-      });
+    if (type !== "contact" || !data) {
+      return res.status(400).json({ 
+        ok: false, 
+        message: "Invalid payload or email type"
+       });
     }
 
 
@@ -22,15 +22,15 @@ exports.sendMail = async (req, res) => {
     // En este caso: Gmail vía SMTP
     const transporter = nodemailer.createTransport({
       service: 'gmail',
-      host: process.env.EMAIL_HOST || 'smtp.gmail.com',          
-      port: Number(process.env.EMAIL_PORT) || 465,   
+      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+      port: Number(process.env.EMAIL_PORT) || 465,
       secure: process.env.EMAIL_SECURE === 'true',
       auth: {
         user: process.env.EMAIL_SENDER,
         pass: process.env.EMAIL_PASSWORD
       },
       // Configuraciones de robustez para servidores en la nube
-      connectionTimeout: 20000, 
+      connectionTimeout: 20000,
       greetingTimeout: 20000,
       socketTimeout: 30000,
       tls: {
@@ -45,40 +45,24 @@ exports.sendMail = async (req, res) => {
     let to = "";
 
     // EMAIL DE CONTACTO
-    
-    if (type === "contact") {
-      subject = " Nuevo mensaje de contacto";
 
-      // se envía a tu correo de la empresa
-      to = process.env.CONTACT_EMAIL_RECEIVER;
 
-      // Generar HTML del correo de contacto
-      html = buildContactTemplate(data);
-    }
+    subject = " Nuevo mensaje de contacto";
 
-  
-    //  EMAIL DE CHECKOUT / FACTURA
-    if (type === "checkout") {
+    // se envía a tu correo de la empresa
+    to = process.env.CONTACT_EMAIL_RECEIVER;
 
-      const orderNumber = `ORD-${Date.now()}`; // un ejemplo de id de factura si existiera en el backend
+    // Generar HTML del correo de contacto
+    html = buildContactTemplate(data);
 
-      subject = `# Factura de tu pedido #${orderNumber}`;
 
-      // La factura se envía al cliente
-      to = data.email;
-
-      // Generar HTML de la factura
-      html = buildInvoiceTemplate({
-        orderNumber,
-        ...data
-      });
-    }
 
     // Validación final
     // Si no se construyó el correo, el tipo es inválido
     if (!subject || !html || !to) {
       return res.status(400).json({
-        error: "Tipo de email no soportado"
+        ok: false,
+        message: "Email type not supported"
       });
     }
 
@@ -91,28 +75,23 @@ exports.sendMail = async (req, res) => {
       html
     };
 
-    
-    // verificar que sea checkout solamente
-    if (type === "checkout") {
-      mailOptions.bcc = process.env.CONTACT_EMAIL_RECEIVER;
-    }
-
     // 3. Enviamos usando el objeto mailOptions
     await transporter.sendMail(mailOptions);
 
 
     // Respuesta al frontend
     return res.status(200).json({
-      message: "Correo enviado correctamente"
+      ok: true,
+      message: "Message sent successfully! We will contact you soon.",
+      data: null // Opcional: seguir el estándar de enviar data
     });
 
   } catch (error) {
 
-    // Error inesperado (SMTP, credenciales, red, etc.)
-    console.error("Error enviando correo:", error);
-
+    console.error("Error en contacto:", error);
     return res.status(500).json({
-      error: "Error enviando correo"
+      ok: false,
+      message: "Internal server error: Could not send email."
     });
   }
 };

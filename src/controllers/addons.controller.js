@@ -15,7 +15,9 @@ exports.createAddOns = async (req, res) => {
         if (existente) {
 
             return res.status(400).json({
-                error: "Ya existe una configuración de AddOns"
+                ok: false,
+                message: "AddOns configuration already exists",
+                type: "DUPLICATE_CONFIG_ERROR"
             });
         }
 
@@ -27,14 +29,23 @@ exports.createAddOns = async (req, res) => {
         });
 
         res.status(201).json({
-            data: nuevoAddOns,
-            message: "AddOns creados correctamente"
+            ok: true,
+            message: "AddOns configuration created successfully",
+            data: nuevoAddOns
         });
 
     } catch (error) {
-
-        res.status(500).json({
-            error: "Error al crear AddOns"
+        if (error.name === 'ValidationError') {
+            const firstError = Object.values(error.errors)[0].message;
+            return res.status(400).json({ 
+                ok: false, 
+                message: firstError, 
+                type: "VALIDATION_ERROR" });
+        }
+        res.status(500).json({ 
+            ok: false, 
+            message: "Internal server error", 
+            type: "SERVER_ERROR" 
         });
     }
 };
@@ -47,14 +58,16 @@ exports.getAddOns = async (req, res) => {
         const addons = await AddOns.find();
 
         res.status(200).json({
-            data: addons,
-            message: "AddOns obtenidos correctamente"
+            ok: true,
+            message: "AddOns retrieved successfully",
+            data: addons || {}
         });
 
     } catch (error) {
-
-        res.status(500).json({
-            error: "Error al obtener AddOns"
+        res.status(500).json({ 
+            ok: false, 
+            message: "Internal server error", 
+            type: "SERVER_ERROR" 
         });
     }
 };
@@ -101,20 +114,31 @@ exports.updateAddOns = async (req, res) => {
 
         if (!actualizado) {
             return res.status(404).json({
-                error: "No existe configuración de AddOns"
+                ok: false,
+                message: "AddOns configuration not found",
+                type: "NOT_FOUND"
             });
         }
 
         res.status(200).json({
-            data: actualizado,
-            message: "AddOns actualizados correctamente"
+            ok: true,
+            message: `AddOn ${action}ed successfully in ${target}`,
+            data: actualizado
         });
 
     } catch (error) {
-
-        res.status(500).json({
-            error: "Error al actualizar AddOns"
-        });
+        if (error.name === 'ValidationError') {
+            const firstError = Object.values(error.errors)[0].message;
+            return res.status(400).json({ 
+                ok: false, 
+                message: firstError, 
+                type: "VALIDATION_ERROR" 
+            });
+        }
+        res.status(500).json({ 
+            ok: false, 
+            message: "Internal server error", 
+            type: "SERVER_ERROR" });
     }
 };
 
@@ -127,18 +151,23 @@ exports.deleteAddOns = async (req, res) => {
 
         if (!eliminado) {
             return res.status(404).json({
-                error: "No existe configuración de AddOns"
+                ok: false,
+                message: "AddOns configuration not found",
+                type: "NOT_FOUND"
             });
         }
 
         res.status(200).json({
-            message: "AddOns eliminados correctamente"
+            ok: true,
+            message: "AddOns configuration deleted successfully",
+            data: null
         });
 
     } catch (error) {
-
-        res.status(500).json({
-            error: "Error al eliminar AddOns"
+        res.status(500).json({ 
+            ok: false, 
+            message: "Internal server error", 
+            type: "SERVER_ERROR" 
         });
     }
 };
@@ -147,25 +176,37 @@ exports.deleteAddOns = async (req, res) => {
 exports.getAddOnByType = async (req, res) => {
 
     const { tipo } = req.query; // lee el query param 'tipo'
-
     const tiposPermitidos = ["weights", "fillings", "flavors"];
+
     if (!tipo || !tiposPermitidos.includes(tipo)) {
-        return res.status(400).json({ error: "Tipo de AddOn inválido" });
+        return res.status(400).json({ 
+            ok: false, 
+            message: "Invalid AddOn type", 
+            type: "INVALID_QUERY_PARAM" 
+        });
     }
 
     try {
 
         const addons = await AddOns.findOne();
         if (!addons) {
-            return res.status(404).json({ error: "No existe configuración de AddOns" });
+            return res.status(404).json({ 
+                ok: false, 
+                message: "AddOns configuration not found", 
+                type: "NOT_FOUND" 
+            });
         }
 
         res.status(200).json({
-            data: addons[tipo],
-            message: `Opciones de ${tipo} obtenidas correctamente`
+            ok: true,
+            message: `Options for ${tipo} retrieved successfully`,
+            data: addons[tipo]
         });
     } catch (error) {
-
-        res.status(500).json({ error: "Error al obtener las opciones de AddOns" });
+        res.status(500).json({ 
+            ok: false,
+            message: "Internal server error", 
+            type: "SERVER_ERROR" 
+        });
     }
 };
